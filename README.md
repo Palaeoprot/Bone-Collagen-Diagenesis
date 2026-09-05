@@ -10,10 +10,10 @@ Remote: [https://github.com/Palaeoprot/Bone-Collagen-Diagenesis](https://github.
 
 ## Overview
 
-For two decades, bone collagen survival in archaeological and paleontological contexts has been modeled using an Arrhenius activation energy of $E_a = 173\ \mathrm{kJ/mol}$ derived from high-temperature laboratory heating experiments ($55\text{--}95^\circ\mathrm{C}$, Smith 2002; Collins et al. 2002). However, this model produces an "Arctic Paradox," predicting that collagen should routinely survive for $>50\text{--}70\ \mathrm{Million\ years}$ in permafrost regimes (such as Ellesmere Island, $-10.5^\circ\mathrm{C}$), when empirical survival on Earth never exceeds $\sim 4\text{--}7\ \mathrm{Ma}$.
+For two decades, bone collagen survival in archaeological and paleontological contexts has been modelled using an Arrhenius activation energy of $E_a = 173\ \mathrm{kJ/mol}$ derived from high-temperature laboratory heating experiments ($55\text{--}95^\circ\mathrm{C}$, Smith 2002; Collins et al. 2002). However, this model produces an "Arctic Paradox," predicting that collagen should routinely survive for $>50\text{--}70\ \mathrm{Million\ years}$ in permafrost regimes (such as Ellesmere Island, $-10.5^\circ\mathrm{C}$), when empirical survival on Earth never exceeds $\sim 4\text{--}7\ \mathrm{Ma}$.
 
-This repository contains all code, harmonized radiocarbon datasets, paleoclimate integrations, and publication figures demonstrating that:
-1. **The Radiocarbon Wall Artifact**: Instrumental radiocarbon blank censoring ($\sim 42\text{--}45\ \mathrm{ka}$ BP) imposes a flat horizontal cutoff across all paleoclimates with mean integrated temperature $\bar{T} < 13.8^\circ\mathrm{C}$, mathematically suppressing apparent thermal ages toward zero in cold environments.
+This repository contains all code, harmonised radiocarbon datasets, paleoclimate integrations, and publication figures demonstrating that:
+1. **The Radiocarbon Wall Artefact **: Instrumental radiocarbon blank censoring ($\sim 42\text{--}45\ \mathrm{ka}$ BP) imposes a flat horizontal cutoff across all paleoclimates with mean integrated temperature $\bar{T} < 13.8^\circ\mathrm{C}$, mathematically suppressing apparent thermal ages toward zero in cold environments.
 2. **True Empirical Kinetics**: Inverting the uncensored kinetic regime ($\bar{T} \ge 13.8^\circ\mathrm{C}$) yields a true empirical activation energy of **$E_a = 130.8\text{--}133.4\ \mathrm{kJ/mol}$** ($R^2 = 0.88$).
 3. **Deep-Time Validation**: Extrapolating this empirical envelope simultaneously unifies modern radiocarbon boundaries, Dmanisi rhino dentin collagen ($1.77\ \mathrm{Ma}$ at $+11^\circ\mathrm{C}$), Yukon horse ($735\ \mathrm{ka}$ at $-9^\circ\mathrm{C}$), and the Ellesmere Bear / High Arctic Camel ceiling ($3.4\text{--}3.9\ \mathrm{Ma}$ at $-10.5^\circ\mathrm{C}$).
 4. **Spatiotemporal Disappearance**: Beyond $14\ \mathrm{ka}$ BP (post-Bølling–Allerød to LGM and MIS 3), bone collagen completely vanishes from all tropical and subtropical regions south of $+30^\circ\mathrm{N}$, while charcoal and inorganic dates persist globally.
@@ -91,5 +91,5 @@ python scripts/plot_earth_paleotemperature_with_c14_panels.py
 ---
 
 ## Citation & Authorship
-- **Palaeoprot Research Group**: [https://github.com/Palaeoprot](https://github.com/Palaeoprot)
+- **Matthew Collins**: [https://github.com/Palaeoprot](https://github.com/Palaeoprot)
 - **Repository**: [https://github.com/Palaeoprot/Bone-Collagen-Diagenesis](https://github.com/Palaeoprot/Bone-Collagen-Diagenesis)
