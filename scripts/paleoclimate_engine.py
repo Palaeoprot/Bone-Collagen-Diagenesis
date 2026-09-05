@@ -50,6 +50,31 @@ class PaleoclimateEngine:
         temps_k = temps_c + 273.15
         return self.times_bp, temps_c, temps_k
 
+    def get_seasonal_series(self, lat: float, lon: float):
+        """
+        Extract MAT (bio01), annual temperature range (bio07), seasonality (bio04),
+        and altitude for a given coordinate.
+        """
+        if lon > 180.0:
+            lon -= 360.0
+            
+        pt_bio01 = self.ds_sorted["bio01"].sel(latitude=lat, longitude=lon, method="nearest").values.astype(float)
+        pt_bio07 = self.ds_sorted["bio07"].sel(latitude=lat, longitude=lon, method="nearest").values.astype(float)
+        pt_alt = self.ds_sorted["altitude"].sel(latitude=lat, longitude=lon, method="nearest").values.astype(float)
+        
+        # Spatial fallback if masked NaN
+        if np.isnan(pt_bio01).any():
+            lat_idx = np.argmin(np.abs(self.lats - lat))
+            lon_idx = np.argmin(np.abs(self.lons - lon))
+            sub01 = self.ds_sorted["bio01"][:, max(0, lat_idx-2):lat_idx+3, max(0, lon_idx-2):lon_idx+3].values
+            sub07 = self.ds_sorted["bio07"][:, max(0, lat_idx-2):lat_idx+3, max(0, lon_idx-2):lon_idx+3].values
+            fb01 = np.nanmean(sub01, axis=(1, 2))
+            fb07 = np.nanmean(sub07, axis=(1, 2))
+            pt_bio01 = np.where(np.isnan(pt_bio01), fb01, pt_bio01)
+            pt_bio07 = np.where(np.isnan(pt_bio07), fb07, pt_bio07)
+            
+        return self.times_bp, pt_bio01, pt_bio07, pt_alt
+
     def calculate_thermal_age(self, lat: float, lon: float, cal_age_bp: float,
                               ea_kj: float = 173.0, t_ref_c: float = 10.0, delta_t_micro: float = 0.0):
         """
@@ -70,7 +95,6 @@ class PaleoclimateEngine:
         
         # Ensure exact end point at cal_age_bp
         if len(sub_times) == 0 or sub_times[-1] < cal_age_bp:
-            # Interpolate temperature at cal_age_bp
             t_interp = np.interp(cal_age_bp, times_bp, t_hist_k)
             sub_times.append(cal_age_bp)
             sub_temps.append(t_interp)
@@ -78,17 +102,14 @@ class PaleoclimateEngine:
         sub_times = np.array(sub_times)
         sub_temps = np.array(sub_temps)
         
-        # Clean any remaining NaNs
         if np.isnan(sub_temps).any():
             valid_mean = np.nanmean(sub_temps)
             if np.isnan(valid_mean):
-                valid_mean = 273.15 + 10.0 # safe fallback
+                valid_mean = 273.15 + 10.0
             sub_temps = np.nan_to_num(sub_temps, nan=valid_mean)
 
-        # Arrhenius acceleration factor at each time step
         arrh_factors = np.exp(-(ea_kj / r_gas) * (1.0 / sub_temps - 1.0 / t_ref_k))
         
-        # Trapezoidal integration (NumPy 2.x compatible)
         if len(sub_times) >= 2:
             if hasattr(np, "trapezoid"):
                 thermal_age = np.trapezoid(arrh_factors, sub_times)
@@ -98,6 +119,76 @@ class PaleoclimateEngine:
             thermal_age = arrh_factors[0] * cal_age_bp
             
         return float(thermal_age)
+
+    def calculate_thermal_age_bounds(self, lat: float, lon: float, cal_age_bp: float,
+                                     ea_kj: float = 82.2, t_ref_c: float = 10.0,
+                                     elevation_m: float = None):
+        """
+        Calculate lower bound (constant MAT / Cave) and upper bound (surface annual cycle)
+        thermal ages chunk-by-chunk.
+        """
+        times_bp, mat_c, range_c, model_alt = self.get_seasonal_series(lat, lon)
+        r_gas = 8.314462618e-3
+        t_ref_k = t_ref_c + 273.15
+        
+        # Elevation lapse rate adjustment if explicit site elevation provided (~6.5 °C / km)
+        delta_t_alt = 0.0
+        if elevation_m is not None and not np.isnan(elevation_m):
+            avg_model_alt = np.nanmean(model_alt)
+            delta_t_alt = -0.0065 * (elevation_m - avg_model_alt)
+            
+        # 1. Lower Bound (Constant MAT / Cave)
+        cave_temps_k = mat_c + delta_t_alt + 273.15
+        
+        # 2. Upper Bound (Surface Seasonal Cycle)
+        # For each time slice, integrate annual cycle via 12-point sinusoidal integration
+        angles = np.linspace(0, 2*np.pi, 24, endpoint=False)
+        surf_eff_k = []
+        for m, r in zip(mat_c, range_c):
+            # annual temperature profile in Kelvin
+            t_annual_k = (m + delta_t_alt) + (r / 2.0) * np.sin(angles) + 273.15
+            # Mean Arrhenius rate across the year
+            avg_k = np.mean(np.exp(-ea_kj / (r_gas * t_annual_k)))
+            # Invert back to effective temperature
+            t_eff_k = -ea_kj / (r_gas * np.log(avg_k))
+            surf_eff_k.append(t_eff_k)
+            
+        surf_eff_k = np.array(surf_eff_k)
+        
+        # Time-bound to cal_age_bp
+        mask = times_bp <= cal_age_bp
+        sub_times = times_bp[mask].tolist()
+        sub_cave_k = cave_temps_k[mask].tolist()
+        sub_surf_k = surf_eff_k[mask].tolist()
+        
+        if len(sub_times) == 0 or sub_times[-1] < cal_age_bp:
+            sub_times.append(cal_age_bp)
+            sub_cave_k.append(float(np.interp(cal_age_bp, times_bp, cave_temps_k)))
+            sub_surf_k.append(float(np.interp(cal_age_bp, times_bp, surf_eff_k)))
+            
+        sub_times = np.array(sub_times)
+        sub_cave_k = np.array(sub_cave_k)
+        sub_surf_k = np.array(sub_surf_k)
+        
+        # Arrhenius factors
+        arrh_cave = np.exp(-(ea_kj / r_gas) * (1.0 / sub_cave_k - 1.0 / t_ref_k))
+        arrh_surf = np.exp(-(ea_kj / r_gas) * (1.0 / sub_surf_k - 1.0 / t_ref_k))
+        
+        trap_fn = getattr(np, "trapezoid", getattr(np, "trapz", None))
+        th_age_cave = float(trap_fn(arrh_cave, sub_times)) if len(sub_times) >= 2 else float(arrh_cave[0] * cal_age_bp)
+        th_age_surf = float(trap_fn(arrh_surf, sub_times)) if len(sub_times) >= 2 else float(arrh_surf[0] * cal_age_bp)
+        
+        # Effective integrated temperatures
+        eff_temp_cave_c = -ea_kj / (r_gas * np.log(th_age_cave / cal_age_bp * np.exp(-ea_kj / (r_gas * t_ref_k)))) - 273.15 if th_age_cave > 0 else np.nan
+        eff_temp_surf_c = -ea_kj / (r_gas * np.log(th_age_surf / cal_age_bp * np.exp(-ea_kj / (r_gas * t_ref_k)))) - 273.15 if th_age_surf > 0 else np.nan
+        
+        return {
+            "th_age_lower_cave": th_age_cave,
+            "th_age_upper_surface": th_age_surf,
+            "eff_temp_lower_cave_c": float(eff_temp_cave_c),
+            "eff_temp_upper_surface_c": float(eff_temp_surf_c),
+            "seasonal_acceleration_factor": float(th_age_surf / th_age_cave) if th_age_cave > 0 else np.nan
+        }
 
 if __name__ == "__main__":
     engine = PaleoclimateEngine()

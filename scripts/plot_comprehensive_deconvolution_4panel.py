@@ -6,8 +6,23 @@ import matplotlib.ticker as ticker
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 
-output_dir = r"D:\26 Modelling Collagen Hydrolysis\outputs"
-cohort_path = r"D:\26 Modelling Collagen Hydrolysis\data\collagen_vs_control_thermal_cohort.parquet"
+_CANDIDATE_DATA = [
+    r"D:\26 Modelling Collagen Hydrolysis\data\collagen_vs_control_thermal_cohort.parquet",
+    r"C:\Users\matth\Documents\GitHub\Bone-Collagen-Diagenesis\data\collagen_vs_control_thermal_cohort.parquet",
+]
+_CANDIDATE_OUT = [
+    r"D:\26 Modelling Collagen Hydrolysis\outputs",
+    r"C:\Users\matth\Documents\GitHub\Palaeoprot-Publications\projects\Ea Collagen Hydrolysis\figures",
+]
+cohort_path = next((q for q in _CANDIDATE_DATA if os.path.exists(q)), None)
+if cohort_path is None:
+    raise SystemExit("cohort parquet not found in any of: %s" % _CANDIDATE_DATA)
+output_dir = next((q for q in _CANDIDATE_OUT if os.path.isdir(q)), _CANDIDATE_OUT[-1])
+os.makedirs(output_dir, exist_ok=True)
+# always also refresh the copy the manuscript references
+MANUSCRIPT_FIG_DIR = r"C:\Users\matth\Documents\GitHub\Palaeoprot-Publications\projects\Ea Collagen Hydrolysis\figures"
+REPO_FIG_DIR = r"C:\Users\matth\Documents\GitHub\Bone-Collagen-Diagenesis\figures"
+print("Reading cohort: %s" % cohort_path)
 df = pd.read_parquet(cohort_path)
 
 col = df[df["material_category"] == "COLLAGEN"].copy()
@@ -122,9 +137,13 @@ inv_t_smith_low = 1000.0 / (temps_smith_low + 273.15)
 ln_k_smith_low = -18687.0 * (1.0 / (temps_smith_low + 273.15)) + 37.976
 
 # Other literature high-T experiments in Smith (2002):
+# Ortner et al. (1972): INTACT (unmacerated) bone, 100-140 C -> Ea = 132.1 kJ/mol.
+# This is the key independent corroboration of the field value (manuscript S4.2).
+ORTNER_EA = 132.1e3
+ORTNER_A = 2.02e13
 temps_ortner = np.array([140.0, 130.0, 120.0, 110.0, 100.0])
 inv_t_ortner = 1000.0 / (temps_ortner + 273.15)
-ln_k_ortner = np.log(2.02e13) - (132.1e3 / (R_SI * (temps_ortner + 273.15)))
+ln_k_ortner = np.log(ORTNER_A) - (ORTNER_EA / (R_SI * (temps_ortner + 273.15)))
 
 temps_von_endt = np.array([130.0, 120.0, 110.0, 100.0])
 inv_t_von_endt = 1000.0 / (temps_von_endt + 273.15)
@@ -139,11 +158,16 @@ poly_field = np.polyfit(kinetic_col["inv_t_k"], kinetic_col["ln_k_s"], 1)
 ea_field = -poly_field[0] * 1000.0 * R_SI / 1000.0
 
 # Deep-Time Benchmarks:
+# Open-matrix bone benchmarks that fall INSIDE the empirical envelope (Table 3).
 benchmarks_b = [
     ("Ellesmere Bear\n(~3.9 Ma, -10.5°C)", -10.5, 3.9e6, 0.20, (0.04, 0.8), "left", "bottom"),
     ("High Arctic Camel\n(~3.4 Ma, -10.5°C)", -10.5, 3.4e6, 0.15, (-0.26, -2.6), "left", "top"),
     ("Yukon Horse\n(~735 ka, -9.0°C)", -9.0, 735000, 0.25, (0.04, 1.3), "left", "bottom"),
-    ("Dmanisi Rhino\n(~1.77 Ma, 11.0°C)", 11.0, 1.77e6, 0.02, (-0.35, 1.3), "left", "bottom")
+]
+# Occluded-matrix specimens: these lie BEYOND the open-system envelope and are
+# NOT evidence for the field curve (manuscript S5.3). Plotted distinctly.
+benchmarks_b_occluded = [
+    ("Dmanisi Rhino DENTIN\n(~1.77 Ma, 11.0°C)\n38x beyond $Q_{99}$", 11.0, 1.77e6, 0.02, (-0.42, 1.5), "left", "bottom"),
 ]
 
 inv_t_grid_b = np.linspace(2.35, 3.95, 300)
@@ -163,6 +187,12 @@ ln_k_grid_field = poly_field[0] * inv_t_grid_b + poly_field[1]
 ax2.plot(inv_t_grid_b, ln_k_grid_field, color="#D95F02", linewidth=3.0, linestyle="-",
          label=rf"Empirical Field $^{{14}}\mathrm{{C}}$: $E_a = {ea_field:.1f}\ \mathrm{{kJ/mol}}$ ($T \geq 13.8^\circ\mathrm{{C}}$)")
 
+# 3b. Ortner et al. (1972) INTACT-bone extrapolation: Ea = 132.1 kJ/mol.
+# Plotted across the full range to show it tracks the field fit into burial temperatures.
+ln_k_grid_ortner = np.log(ORTNER_A) - (ORTNER_EA / (R_SI * (1000.0 / inv_t_grid_b)))
+ax2.plot(inv_t_grid_b, ln_k_grid_ortner, color="#66C2A5", linewidth=2.6, linestyle=(0, (6, 2)),
+         zorder=4, label=r"Ortner (1972) $\bf{intact}$ bone: $E_a = 132.1\ \mathrm{kJ/mol}$")
+
 # 4. Peptide bond hydrolysis (Collins & Galley 1998, Ea = 92 kJ/mol)
 inv_t_20 = 1000.0 / (20.0 + 273.15)
 ln_k_20 = poly_field[0] * inv_t_20 + poly_field[1]
@@ -172,13 +202,13 @@ ax2.plot(inv_t_grid_b, ln_k_grid_92, color="#2B83BA", linewidth=1.8, linestyle="
 
 # Plot Lab Experimental Points
 ax2.scatter(inv_t_smith_high, ln_k_smith_high, color="#7570B3", s=85, marker="o", edgecolors="#000000", linewidths=1.0, zorder=6,
-            label=r"Smith (2002) Lab (75–95°C)")
+            label=r"Smith (2002) $\it{powdered}$ (75–95°C)")
 ax2.scatter(inv_t_smith_low, ln_k_smith_low, color="#8DA0CB", s=70, marker="s", edgecolors="#000000", linewidths=0.9, zorder=6,
-            label=r"Smith (2002) Lab (55–75°C)")
+            label=r"Smith (2002) $\it{powdered}$ (55–75°C)")
 ax2.scatter(inv_t_ortner, ln_k_ortner, color="#66C2A5", s=60, marker="^", edgecolors="#000000", linewidths=0.8, zorder=5,
-            label=r"Ortner et al. (100–140°C)")
+            label=r"Ortner (1972) $\bf{intact}$ bone (100–140°C)")
 ax2.scatter(inv_t_von_endt, ln_k_von_endt, color="#E6AB02", s=60, marker="v", edgecolors="#000000", linewidths=0.8, zorder=5,
-            label=r"Von Endt & Ortner (100–130°C)")
+            label=r"Von Endt & Ortner (1984) $\it{powdered}$ (100–130°C)")
 
 # Plot Field Radiocarbon Points
 ax2.scatter(kinetic_col["inv_t_k"], kinetic_col["ln_k_s"], color="#980E1E", s=85, marker="D", edgecolors="#000000", linewidths=1.1, zorder=7,
@@ -196,6 +226,18 @@ for name, t_c, age_yr, frac, (off_x, off_y), ha, va in benchmarks_b:
                  arrowprops=dict(arrowstyle="->", color="#E7298A", lw=1.1),
                  bbox=dict(boxstyle="round,pad=0.18", facecolor="#FCE4EC", edgecolor="#E7298A", alpha=0.9))
 
+# Occluded-matrix outlier(s): hollow marker, explicitly NOT supporting the fit
+for name, t_c, age_yr, frac, (off_x, off_y), ha, va in benchmarks_b_occluded:
+    inv_t = 1000.0 / (t_c + 273.15)
+    ln_k = np.log((-np.log(frac) / age_yr) / sec_per_yr)
+    ax2.scatter(inv_t, ln_k, facecolors="none", s=150, marker="o", edgecolors="#E7298A",
+                linewidths=2.0, zorder=8)
+    ax2.annotate(name, (inv_t, ln_k), xytext=(inv_t + off_x, ln_k + off_y),
+                 fontsize=6.8, fontstyle="italic", color="#880e4f", ha=ha, va=va,
+                 arrowprops=dict(arrowstyle="->", color="#E7298A", lw=1.0, linestyle=":"),
+                 bbox=dict(boxstyle="round,pad=0.18", facecolor="#FFFFFF", edgecolor="#E7298A",
+                           alpha=0.9, linestyle=":"))
+
 # High-T Annotation
 ax2.annotate("Smith (2002) Lab Gelatinization\n(55°C - 95°C Heating Experiments)\n$E_a = 173.2\\ \\mathrm{kJ/mol}$",
              xy=(2.85, -15.5), xytext=(2.40, -11.0),
@@ -208,7 +250,8 @@ ax2.annotate("CRITICAL DIVERGENCE AT ARCTIC TEMPS:\n"
              "• $E_a = 173.2\\ \\mathrm{kJ/mol}$ predicts $\\ln k \\approx -39.5$ at -10.5°C\n"
              "  (unphysical survival >50–70 Ma!)\n"
              "• Actual Ellesmere Bear (~3.9 Ma) yields $\\ln k \\approx -32$\n"
-             "  --> Validates field $E_a = 130.8\\text{--}133.4\\ \\mathrm{kJ/mol}$!",
+             "  (a survivorship bound, not a rate measurement)\n"
+             "  --> consistent with field $E_a \\approx 133\\ \\mathrm{kJ/mol}$, not with 173",
              xy=(3.807, -31.97), xytext=(3.15, -16.0),
              arrowprops=dict(arrowstyle="->", color="#880e4f", lw=1.3, connectionstyle="arc3,rad=-0.2"),
              bbox=dict(boxstyle="round,pad=0.32", facecolor="#FFF0F5", edgecolor="#880e4f", lw=1.1),
@@ -300,14 +343,21 @@ ax4.axhline(42000, color="#666666", linestyle=":", linewidth=1.8, label=r"$^{14}
 ax4.fill_between(t_fine, 10, 42000, color="#E8F4F8", alpha=0.5, label=r"$^{14}\mathrm{C}$ Measurable Window")
 
 # Palaeoproteomic Benchmarks: Bone Collagen vs Enamel EMPs
+# INSIDE the empirical envelope: open, pore-accessible bone (Table 3, upper block).
+# Thermal ages @10 C under Ea = 133.4 kJ/mol are annotated for reproducibility.
 benchmarks_bone = [
-    ("Harbin Cranium\n(~148 ka, Bone Col)", 3.5, 148000, (4.0, 48000)),
-    ("Denisova Hominin\n(~150 ka, Bone)", -2.0, 150000, (-2.0, 260000)),
-    ("Boxgrove / Sima\n(~430 ka, Bone/Dentin)", 7.0, 430000, (7.0, 1100000)),
-    ("Yukon Horse\n(~735 ka, Bone)", -9.0, 735000, (-9.0, 190000)),
-    ("Dmanisi Rhino\n(~1.77 Ma, Dentin)", 11.0, 1770000, (11.0, 580000)),
-    ("High Arctic Camel\n(~3.4 Ma, Bone)", -12.0, 3400000, (-12.0, 1800000)),
-    ("Ellesmere Bear (NUFV 303)\n(~3.9 Ma, Radius Bone)", -10.5, 3900000, (-5.0, 5200000))
+    ("Harbin Cranium\n(~148 ka, bone)\n39.1 ka @10°C", 3.5, 148000, (4.0, 40000)),
+    ("Denisova Hominin\n(~150 ka, bone)\n12.2 ka @10°C", -2.0, 150000, (-2.0, 260000)),
+    ("Yukon Horse\n(~735 ka, bone)\n12.5 ka @10°C", -9.0, 735000, (-9.0, 190000)),
+    ("High Arctic Camel\n(~3.4 Ma, bone)\n40.8 ka @10°C", -10.5, 3400000, (-12.4, 1500000)),
+    ("Ellesmere Bear (NUFV 303)\n(~3.9 Ma, radius bone)\n46.8 ka @10°C", -10.5, 3900000, (-5.2, 5200000)),
+]
+
+# BEYOND the envelope: unexpected survival attributed to a mineral-occluded niche
+# (manuscript S5.3, after Salamon et al. 2005). Distinct hollow marker.
+benchmarks_occluded = [
+    ("Boxgrove / Sima\n(~430 ka, bone/dentin)\n234 ka @10°C — 4x beyond $Q_{99}$", 7.0, 430000, (1.0, 20000)),
+    ("Dmanisi Rhino DENTIN\n(~1.77 Ma)\n2.16 Ma @10°C — 38x beyond $Q_{99}$", 11.0, 1770000, (7.6, 6500)),
 ]
 
 for name, t_site, age_site, (tx, ty) in benchmarks_bone:
@@ -317,10 +367,20 @@ for name, t_site, age_site, (tx, ty) in benchmarks_bone:
                  arrowprops=dict(arrowstyle="->", color="#D95F02", lw=1.2),
                  bbox=dict(boxstyle="round,pad=0.22", facecolor="#FFF3E0", edgecolor="#D95F02", alpha=0.9, lw=0.8))
 
-# Tripot Cave Australian Paradox (Peters & Collins 2023)
+# Occluded-niche benchmarks beyond the envelope (hollow markers, dotted leaders)
+for name, t_site, age_site, (tx, ty) in benchmarks_occluded:
+    ax4.scatter(t_site, age_site, facecolors="none", s=110, marker="o", edgecolors="#D95F02",
+                linewidths=2.0, zorder=7)
+    ax4.annotate(name, (t_site, age_site), xytext=(tx, ty),
+                 fontsize=6.8, fontstyle="italic", color="#7A3E00",
+                 arrowprops=dict(arrowstyle="->", color="#D95F02", lw=1.0, linestyle=":"),
+                 bbox=dict(boxstyle="round,pad=0.22", facecolor="#FFFFFF", edgecolor="#D95F02",
+                           alpha=0.92, lw=0.8, linestyle=":"))
+
+# Subtropical Australian karst (Peters et al. 2023, Commun. Earth Environ. 4, 438)
 tripot_sites = [
-    ("Tripot Cave (Unit 1)\n(~75 ka, 24.1°C)", 24.1, 75000, (20.5, 110000)),
-    ("Tripot Cave (Unit 2)\n(~350 ka, 24.1°C, ZooMS)", 24.1, 350000, (20.5, 580000))
+    ("Broken River / Capricorn\n(~75 ka, 24.1°C)", 24.1, 75000, (20.5, 110000)),
+    ("Broken River / Capricorn\n(~350 ka, 24.1°C, 72% ZooMS)", 24.1, 350000, (23.0, 3000000))
 ]
 for name, t_site, age_site, (tx, ty) in tripot_sites:
     ax4.scatter(t_site, age_site, c="#E41A1C", s=110, marker="*", edgecolors="#000000", linewidths=1.2, zorder=8)
@@ -332,8 +392,8 @@ ax4.plot([24.1, 24.1], [75000, 350000], color="#E41A1C", linestyle="--", linewid
 
 # Enamel Control Benchmarks (0% Collagen)
 enamel_benchmarks = [
-    ("Swartkrans Paranthropus\n(~1.8–2.0 Ma, 0% Col)", 16.5, 1800000, (14.2, 3800000), "right"),
-    ("Devon Island Rhino\n(~21–23 Ma, 0% Col)", -11.0, 22000000, (-7.5, 18000000), "left")
+    ("Swartkrans Paranthropus\n(~1.8–2.0 Ma, 0% Col)", 16.5, 1800000, (17.5, 9000000), "left"),
+    ("Haughton / Devon Island Rhino\n(~21–24 Ma, 0% Col)", -11.0, 22000000, (-7.5, 18000000), "left")
 ]
 for name, t_site, age_site, (tx, ty), ha in enamel_benchmarks:
     ax4.scatter(t_site, age_site, c="#7570B3", s=95, marker="D", edgecolors="#000000", linewidths=1.3, zorder=7)
@@ -343,37 +403,37 @@ for name, t_site, age_site, (tx, ty), ha in enamel_benchmarks:
                  bbox=dict(boxstyle="round,pad=0.25", facecolor="#EDE7F6", edgecolor="#7570B3", alpha=0.95, lw=0.9))
 
 # Annotation showing Arctic Collagen Ceiling Fit
-ax4.annotate(r"High Arctic Bone Collagen Ceiling:" "\n"
-             r"Ellesmere Bear (3.9 Ma) & Camel (3.4 Ma)" "\n"
-             r"sit directly on the $E_a = 133\text{--}137\ \mathrm{kJ/mol}$ boundary!" "\n"
-             r"$\rightarrow$ Absolute collagen survival ceiling is $\sim 4\text{--}7\ \mathrm{Ma}$",
-             xy=(-10.5, 3900000), xytext=(-11.5, 300),
+ax4.annotate(r"High Arctic ceiling: bear & camel fall between" "\n"
+             r"$Q_{98}$ and $Q_{99}$ of the $^{14}$C-calibrated envelope —" "\n"
+             r"where the oldest survivors are expected to sit." "\n"
+             r"$\rightarrow$ open-bone limit $\approx 4.8\ \mathrm{Ma}$ at $-10.5^\circ\mathrm{C}$",
+             xy=(-10.5, 3900000), xytext=(-12.0, 2500),
              fontsize=8.0, fontweight="bold", color="#980E1E",
              arrowprops=dict(arrowstyle="->", color="#980E1E", lw=1.4),
              bbox=dict(boxstyle="round,pad=0.4", facecolor="#FFEBEE", edgecolor="#D32F2F", lw=1.1))
 
 # Annotation callout for Australian Paradox
 callout_aus = (
-    "AUSTRALIAN PARADOX (Peters & Collins 2023)\n"
-    "• Tripot Cave: 72% ZooMS col at 75–350 ka, 24.1°C\n"
-    "• Thermal Age: 1.8–8.5 Ma! (Broke ceiling)\n"
-    "--> 'Polymer-in-a-box' sealed karst confinement!"
+    "BEYOND THE OPEN-SYSTEM ENVELOPE (Peters et al. 2023)\n"
+    "5.14 Ma @10°C — 90x beyond $Q_{99}$. No $E_a$ absorbs this:\n"
+    "--> mineral-occluded niche, not a revised rate constant"
 )
 ax4.annotate(callout_aus,
-             xy=(24.1, 200000), xytext=(15.0, 70),
-             fontsize=7.4, fontweight="bold", color="#B71C1C",
+             xy=(24.1, 200000), xytext=(9.2, 130),
+             fontsize=7.2, fontweight="bold", color="#B71C1C",
              arrowprops=dict(arrowstyle="->", color="#E41A1C", lw=1.4, connectionstyle="arc3,rad=-0.15"),
              bbox=dict(boxstyle="round,pad=0.4", facecolor="#FFEBEE", edgecolor="#B71C1C", lw=1.1))
 
 ax4.set_yscale("log")
-ax4.set_xlim(-12.5, 28)
+ax4.set_xlim(-12.5, 29.5)
 ax4.set_ylim(50, 70000000) # Up to 70 Million years
 ax4.set_xlabel("Paleoclimate-Integrated Temperature $\\bar{T}$ (°C)", fontsize=12, fontweight="bold", labelpad=6)
 ax4.set_ylabel("True Preservation Age (Years, Log Scale)", fontsize=12, fontweight="bold", labelpad=6)
-ax4.set_title("D. True Kinetic Lifespans Extrapolated into Deep Time & Arctic Validation", fontsize=13, fontweight="bold", pad=10)
+ax4.set_title("D. Deep-Time Survival: Envelope Consistent (filled) vs Occluded-Matrix (hollow)", fontsize=13, fontweight="bold", pad=10)
 ax4.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, _: f"{int(y):,}" if y < 1e6 else f"{y/1e6:g} Ma"))
 ax4.grid(True, which="both", linestyle="--", alpha=0.4, color="#cccccc")
-ax4.legend(loc="upper right", frameon=True, framealpha=0.92, edgecolor="#cccccc", fontsize=8.0)
+ax4.legend(loc="upper center", bbox_to_anchor=(0.5, -0.13), frameon=True, framealpha=0.95,
+           edgecolor="#cccccc", fontsize=7.6, ncol=3)
 
 plt.suptitle("Deconvolving Instrumental Radiocarbon Limits from True Bone Collagen Degradation Kinetics",
              fontsize=16, fontweight="bold", y=0.995)
@@ -383,10 +443,16 @@ plt.savefig(out_fig, dpi=300, bbox_inches="tight")
 plt.close()
 print(f"Saved comprehensive 4-panel figure to: {out_fig}")
 
-artifact_dir = r"C:\Users\matth\.gemini\antigravity-ide\brain\cd905880-511d-460a-944c-c857596f9afc"
 import shutil
-artifact_fig = os.path.join(artifact_dir, "Figure_Comprehensive_4Panel_Radiocarbon_Deconvolution.png")
-shutil.copy2(out_fig, artifact_fig)
-print(f"Mirrored figure to artifact directory: {artifact_fig}")
+for _d in (MANUSCRIPT_FIG_DIR, REPO_FIG_DIR,
+           r"C:\Users\matth\.gemini\antigravity-ide\brain\cd905880-511d-460a-944c-c857596f9afc"):
+    try:
+        if os.path.isdir(_d):
+            _dst = os.path.join(_d, "Figure_Comprehensive_4Panel_Radiocarbon_Deconvolution.png")
+            if os.path.abspath(_dst) != os.path.abspath(out_fig):
+                shutil.copy2(out_fig, _dst)
+                print(f"Mirrored figure to: {_dst}")
+    except OSError as exc:
+        print(f"Could not mirror to {_d}: {exc}")
 
 

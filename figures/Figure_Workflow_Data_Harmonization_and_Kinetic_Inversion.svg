@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 760" width="100%" height="100%" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="3" in="SourceAlpha" />
+      <feOffset dx="0" dy="3" />
+      <feComponentTransfer><feFuncA type="linear" slope="0.08" /></feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#dc2626" />
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb" />
+    </marker>
+    <linearGradient id="grad-global" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="grad-collagen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fff1f2" />
+      <stop offset="100%" stop-color="#ffe4e6" />
+    </linearGradient>
+    <linearGradient id="grad-control" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#f1f5f9" />
+    </linearGradient>
+    <linearGradient id="grad-climate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff" />
+      <stop offset="100%" stop-color="#dbeafe" />
+    </linearGradient>
+    <linearGradient id="grad-invert" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0fdf4" />
+      <stop offset="100%" stop-color="#dcfce7" />
+    </linearGradient>
+  </defs>
+
+  <!-- Title & Header -->
+  <text x="480" y="36" text-anchor="middle" font-size="18" font-weight="700" fill="#0f172a" letter-spacing="-0.02em">Global Data Harmonisation &amp; Kinetic Inversion Workflow</text>
+  <text x="480" y="56" text-anchor="middle" font-size="12" fill="#64748b">Pipeline for deconvolution of radiocarbon truncation and derivation of empirical activation energy</text>
+
+  <!-- Step 1: Global Dataset -->
+  <g transform="translate(280, 75)" filter="url(#shadow)">
+    <rect width="400" height="68" rx="8" fill="url(#grad-global)" stroke="#334155" stroke-width="1" />
+    <text x="200" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#f8fafc">GLOBAL RADIOCARBON MASTER DATASET</text>
+    <text x="200" y="48" text-anchor="middle" font-size="12" fill="#94a3b8">185,189 Determinations • MEGA14C + p3k14c + IntCal20</text>
+  </g>
+
+  <!-- Down Arrow 1 -->
+  <line x1="480" y1="143" x2="480" y2="173" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- Step 2: Curation -->
+  <g transform="translate(260, 175)" filter="url(#shadow)">
+    <rect width="440" height="60" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+    <text x="220" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="#1e293b">STANDARDISED TAXONOMIC &amp; MATERIAL CURATION</text>
+    <text x="220" y="45" text-anchor="middle" font-size="11" fill="#64748b">Coordinate validation, quality screening, and 1-to-1 site/horizon pairing</text>
+  </g>
+
+  <!-- Branching Arrows -->
+  <path d="M 480 235 L 480 265 L 240 265 L 240 288" fill="none" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow-red)" />
+  <path d="M 480 235 L 480 265 L 720 265 L 720 288" fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)" />
+
+  <!-- Step 3A: Purified Bone Collagen (Left) -->
+  <g transform="translate(40, 290)" filter="url(#shadow)">
+    <rect width="400" height="96" rx="8" fill="url(#grad-collagen)" stroke="#fca5a5" stroke-width="1.5" />
+    <rect x="15" y="12" width="135" height="20" rx="4" fill="#dc2626" />
+    <text x="82" y="26" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">ANALYTICAL COHORT</text>
+    <text x="200" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="#991b1b">PURIFIED BONE COLLAGEN</text>
+    <text x="200" y="64" text-anchor="middle" font-size="12" font-weight="600" fill="#b91c1c">N = 18,101 determinations</text>
+    <text x="200" y="82" text-anchor="middle" font-size="10.5" fill="#7f1d1d">Ultrafiltered gelatin • C:N ratio 2.9–3.5 • Yield ≥ 1.0 wt%</text>
+  </g>
+
+  <!-- Step 3B: Organic Negative Controls (Right) -->
+  <g transform="translate(520, 290)" filter="url(#shadow)">
+    <rect width="400" height="96" rx="8" fill="url(#grad-control)" stroke="#cbd5e1" stroke-width="1.5" />
+    <rect x="15" y="12" width="135" height="20" rx="4" fill="#475569" />
+    <text x="82" y="26" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">NEGATIVE CONTROLS</text>
+    <text x="200" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">ORGANIC WITNESS CONTROLS</text>
+    <text x="200" y="64" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">N = 18,101 determinations</text>
+    <text x="200" y="82" text-anchor="middle" font-size="10.5" fill="#64748b">Charcoal, wood, plant macrofossils from identical horizons</text>
+  </g>
+
+  <!-- Merging Arrows -->
+  <path d="M 240 386 L 240 415 L 480 415" fill="none" stroke="#dc2626" stroke-width="1.5" />
+  <path d="M 720 386 L 720 415 L 480 415" fill="none" stroke="#475569" stroke-width="1.5" />
+  <line x1="480" y1="415" x2="480" y2="438" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)" />
+
+  <!-- Step 4: Paleoclimate Integration -->
+  <g transform="translate(200, 440)" filter="url(#shadow)">
+    <rect width="560" height="72" rx="8" fill="url(#grad-climate)" stroke="#93c5fd" stroke-width="1.5" />
+    <text x="280" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="#1e40af">CONTINUOUS PALEOCLIMATE INTEGRATION</text>
+    <text x="280" y="45" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1d4ed8">Beyer et al. (2020) HadCM3 Emulator • 0.5° × 0.5° Grid • 72 Slices (120 ka to 0 BP)</text>
+    <text x="280" y="62" text-anchor="middle" font-size="10.5" fill="#3b82f6">Lapse-rate (-6.5 °C/km) &amp; cave/subsurface thermal damping corrections</text>
+  </g>
+
+  <!-- Down Arrow 4 -->
+  <line x1="480" y1="512" x2="480" y2="540" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- Step 5: Thermal Age Calculation -->
+  <g transform="translate(240, 542)" filter="url(#shadow)">
+    <rect width="480" height="60" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+    <text x="240" y="25" text-anchor="middle" font-size="13" font-weight="700" fill="#1e293b">EFFECTIVE THERMAL AGE &amp; TEMPERATURE INTEGRATION</text>
+    <text x="240" y="44" text-anchor="middle" font-size="11" fill="#64748b">Numerical trapezoidal Arrhenius integration over site thermal trajectories T(t)</text>
+  </g>
+
+  <!-- Down Arrow 5 -->
+  <line x1="480" y1="602" x2="480" y2="630" stroke="#16a34a" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- Step 6: Deconvolution & Inversion -->
+  <g transform="translate(180, 632)" filter="url(#shadow)">
+    <rect width="600" height="84" rx="8" fill="url(#grad-invert)" stroke="#86efac" stroke-width="1.5" />
+    <text x="300" y="26" text-anchor="middle" font-size="14" font-weight="700" fill="#14532d">DECONVOLUTION &amp; QUANTILE KINETIC INVERSION</text>
+    <text x="300" y="46" text-anchor="middle" font-size="11.5" font-weight="600" fill="#15803d">Segmented Breakpoint Split at Tc = 13.8 °C (Censored vs Uncensored)</text>
+    <text x="300" y="66" text-anchor="middle" font-size="11" fill="#166534">Quantile regressions (Q90–Q99) on uncensored regime: Ea = 133.4 ± 3.6 kJ·mol⁻¹</text>
+  </g>
+</svg>
